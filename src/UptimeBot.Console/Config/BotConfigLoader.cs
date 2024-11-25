@@ -8,7 +8,6 @@ public static class BotConfigLoader
     {
         DotNetEnv.Env.Load();
         settingsFile ??= "appsettings.json";
-        System.Console.WriteLine($"Settings file {settingsFile}");
         var configurationRoot = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile(settingsFile, optional: false, reloadOnChange: false)
