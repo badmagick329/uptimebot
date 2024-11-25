@@ -1,15 +1,17 @@
 ﻿using System.Threading.Channels;
 using UptimeBot.Console.Examples;
+using UptimeBot.Console.Worker;
 
 class Program
 {
     public static async Task Main(string[] args)
     {
-        var channel = Channel.CreateUnbounded<string>();
+        using var cts = new CancellationTokenSource();
+        var worker = new Worker();
 
         try
         {
-            await Examples.CommandsExample();
+            await Examples.CommandsExample(worker.Shutdown, cts);
         }
         catch (Exception e)
         {

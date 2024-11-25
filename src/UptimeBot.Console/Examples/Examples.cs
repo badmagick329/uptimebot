@@ -11,7 +11,10 @@ namespace UptimeBot.Console.Examples;
 
 public static class Examples
 {
-    public static async Task CommandsExample(CancellationTokenSource cts)
+    public static async Task CommandsExample(
+        Func<Task> shutdownHandler,
+        CancellationTokenSource cts
+    )
     {
         var config = BotConfigLoader.CreateConfig();
 
@@ -50,7 +53,7 @@ public static class Examples
         var client = builder.Build();
         Debug.Assert(client != null);
         await client.ConnectAsync();
-        await WaitForCtrlC(cts);
+        await WaitForCtrlC(shutdownHandler, cts);
     }
 
     public static async Task BasicExample()
@@ -81,19 +84,30 @@ public static class Examples
         await Task.Delay(-1);
     }
 
-    static async Task WaitForCtrlC(CancellationTokenSource cts)
+    static async Task WaitForCtrlC(Func<Task> shutdownHandler, CancellationTokenSource cts)
     {
+        System.Console.WriteLine("Press Ctrl+C to exit...");
+
         System.Console.CancelKeyPress += async (sender, e) =>
         {
+            System.Console.WriteLine("Ctrl+C pressed, exiting...");
             e.Cancel = true;
             await Task.Delay(1000);
+            System.Console.WriteLine("Sending cancellation signal...");
             cts.Cancel();
+            System.Console.WriteLine("Waiting for shutdown handler...");
+            await shutdownHandler();
         };
         try
         {
+            System.Console.WriteLine("Waiting for cancellation");
             await WaitForCancellationAsync(cts.Token);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            System.Console.WriteLine("Cancellation requested");
+        }
+        System.Console.WriteLine("Exiting...");
     }
 
     static Task WaitForCancellationAsync(CancellationToken cancellationToken)
