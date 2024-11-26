@@ -1,25 +1,36 @@
 using System.Threading.Channels;
-using UptimeBot.Console.Core;
+using UptimeBot.Console.Infrastructure.Repository;
 
-namespace UptimeBot.Console.Worker;
+namespace UptimeBot.Console.Core.Worker;
 
 public class Worker
 {
     private readonly CancellationTokenSource _cts;
     private readonly List<Task> _tasks = [];
+    private readonly Publisher _publisher;
+    private readonly List<Subscriber> _subscribers;
 
-    public Worker()
+    public Worker(IWorkerMessageRepository workerMessageRepository)
     {
         System.Console.WriteLine("[Worker] starting");
         _cts = new CancellationTokenSource();
         var channel = Channel.CreateUnbounded<WorkerMessage>();
-        var pub = new Publisher(channel.Writer, _cts.Token);
-        var subs = Enumerable
+        _publisher = new Publisher(channel.Writer, workerMessageRepository, _cts.Token);
+        _subscribers = Enumerable
             .Range(1, 3)
             .Select(id => new Subscriber(channel.Reader, id, _cts.Token))
             .ToList();
-        _tasks.Add(pub.StartAsync());
-        _tasks.AddRange(subs.Select(s => s.StartAsync()));
+    }
+
+    public void AddNotificationHandler(Func<string, Task> notificationHandler)
+    {
+        _subscribers.ForEach(s => s.AddNotificationHandler(notificationHandler));
+    }
+
+    public void Start()
+    {
+        _tasks.Add(_publisher.StartAsync());
+        _tasks.AddRange(_subscribers.Select(s => s.StartAsync()));
         System.Console.WriteLine("[Worker] started");
     }
 

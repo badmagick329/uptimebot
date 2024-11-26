@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace UptimeBot.Console.Config;
+namespace UptimeBot.Console.Core.Config;
 
 public static class BotConfigLoader
 {
@@ -22,13 +22,15 @@ public static class BotConfigLoader
             Prefix =
                 configurationRoot["Prefix"]
                 ?? throw new InvalidOperationException("Prefix configuration is missing"),
-            Owner =
+            Owner = ulong.Parse(
                 configurationRoot["DiscordIds:Owner"]
-                ?? throw new InvalidOperationException("Owner configuration is missing"),
+                    ?? throw new InvalidOperationException("Owner configuration is missing")
+            ),
             DevGuildId = ulong.Parse(
                 configurationRoot["DiscordIds:DevGuild"]
                     ?? throw new InvalidOperationException("DevGuildId configuration is missing")
             ),
+            UrlsToPing = configurationRoot.GetSection("UrlsToPing").Get<List<string>>() ?? [],
         };
     }
 }
